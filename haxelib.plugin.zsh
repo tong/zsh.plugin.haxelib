@@ -1,13 +1,12 @@
 
-function __haxelib_list() {
-	ls $HAXELIB | sed -e 's/,/./g'
+__haxelib_list() {
+	ls $HAXELIB_PATH | sed -e 's/,/./g'
 }
 
 __haxelib_complete() {
-
 	if (( CURRENT == 2 )); then
 		_arguments=(
-			'install':'install a given library, or all libraries from a hxml file'
+			'install:install a given library, or all libraries from a hxml file'
 			'update:update a single library (if given) or all installed libraries'
 			'remove:remove a given library/version'
 			'list:list all installed libraries'
@@ -39,21 +38,31 @@ __haxelib_complete() {
 			'--global:force global repo if a local one exists'
 		)
 		_describe -t commands "haxelib subcommand" _arguments
-
 	elif ((CURRENT == 3)); then
-		case "$words[2]" in
-			update|remove|set)
-				compadd -- `ls $HAXELIB | sed -e 's/,/./g'`
-				#compadd -- __haxelib_list $HAXELIB
+		case $words[2] in
+			git|hg|update|remove|set)
+				compadd -- `__haxelib_list`
+			;;
+			run)
+				for f in $HAXELIB_PATH/*; do
+					lib=`basename $f`
+					lib="${lib//,/.}"
+					if [ -f $f/.current ]; then
+						version="`cat $f/.current`"
+						version="${version//./,}"
+						if [ -f $f/$version/run.n ]; then
+							compadd -- $lib
+						fi
+					elif [ -f $f/.dev ]; then
+						compadd -- $lib
+					fi
+				done
 			;;
 			#TODO submit|local) #list *.zip
-			#TODO run) #list libraries having a run.n
 		esac
-
+	#elif ((CURRENT == 4)); then
+		#echo "4: $words[2]"
 	fi
 }
 
 compdef __haxelib_complete haxelib
-
-#alias hxl='haxelib'
-#alias hxlu='haxelib update'
